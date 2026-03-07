@@ -31,12 +31,16 @@ usage() {
   printf '%s\n' ""
   printf '%s\n' "Arguments:"
   printf '%s\n' "  version    Version number (e.g., 0.2.0) or bump type (patch, minor, major)"
+  printf '%s\n' "             Append -rc to any bump type for release candidate (e.g., patch-rc)"
   printf '%s\n' ""
   printf '%s\n' "Examples:"
-  printf '%s\n' "  $0 0.2.0     # Set version to 0.2.0"
-  printf '%s\n' "  $0 patch     # Bump patch version (0.1.0 -> 0.1.1)"
-  printf '%s\n' "  $0 minor     # Bump minor version (0.1.0 -> 0.2.0)"
-  printf '%s\n' "  $0 major     # Bump major version (0.1.0 -> 1.0.0)"
+  printf '%s\n' "  $0 0.2.0       # Set version to 0.2.0"
+  printf '%s\n' "  $0 patch       # Bump patch version (0.1.0 -> 0.1.1)"
+  printf '%s\n' "  $0 minor       # Bump minor version (0.1.0 -> 0.2.0)"
+  printf '%s\n' "  $0 major       # Bump major version (0.1.0 -> 1.0.0)"
+  printf '%s\n' "  $0 patch-rc    # Bump patch RC (0.1.0 -> 0.1.1-rc.0, 0.1.1-rc.0 -> 0.1.1-rc.1)"
+  printf '%s\n' "  $0 minor-rc    # Bump minor RC (0.1.0 -> 0.2.0-rc.0)"
+  printf '%s\n' "  $0 major-rc    # Bump major RC (0.1.0 -> 1.0.0-rc.0)"
   exit 1
 }
 
@@ -53,26 +57,9 @@ version_arg="$1"
 current_version=$(node -p "require('./package.json').version")
 
 # Calculate new version based on argument
-case "$version_arg" in
-  patch)
-    new_version=$(printf '%s' "$current_version" | awk -F. '{printf "%d.%d.%d", $1, $2, $3+1}')
-    ;;
-  minor)
-    new_version=$(printf '%s' "$current_version" | awk -F. '{printf "%d.%d.0", $1, $2+1}')
-    ;;
-  major)
-    new_version=$(printf '%s' "$current_version" | awk -F. '{printf "%d.0.0", $1+1}')
-    ;;
-  *)
-    # Validate version format (semver: X.Y.Z)
-    if ! printf '%s' "$version_arg" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-      print_error "invalid version format: $version_arg"
-      printf '%s\n' "Version must be in format X.Y.Z (e.g., 0.2.0) or a bump type (patch, minor, major)"
-      exit 1
-    fi
-    new_version="$version_arg"
-    ;;
-esac
+if ! new_version=$(node scripts/bump.js "$version_arg"); then
+  exit 1
+fi
 
 tag="v$new_version"
 
