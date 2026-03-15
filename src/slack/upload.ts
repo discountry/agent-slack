@@ -1,6 +1,6 @@
 import { readFile, stat, realpath } from "node:fs/promises";
 import { basename } from "node:path";
-import type { SlackApiClient } from "./client.ts";
+import type { FetchImpl, SlackApiClient } from "./client.ts";
 import { getString, isRecord } from "../lib/object-type-guards.ts";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB — Slack's upload limit
@@ -11,6 +11,7 @@ export async function uploadLocalFileToSlack(input: {
   filePath: string;
   threadTs?: string;
   initialComment?: string;
+  fetchImpl?: FetchImpl;
 }): Promise<void> {
   const resolvedPath = await realpath(input.filePath);
   const fileStats = await stat(resolvedPath);
@@ -42,7 +43,8 @@ export async function uploadLocalFileToSlack(input: {
     throw new Error("Slack did not return an upload URL for file attachment");
   }
 
-  const uploadResp = await fetch(uploadUrl, {
+  const fetchFn = input.fetchImpl ?? globalThis.fetch;
+  const uploadResp = await fetchFn(uploadUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/octet-stream",

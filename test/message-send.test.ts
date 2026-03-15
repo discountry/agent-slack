@@ -17,6 +17,7 @@ function createContext(calls: { method: string; params: Record<string, unknown> 
   };
 
   return {
+    fetchImpl: globalThis.fetch,
     effectiveWorkspaceUrl: (flag?: string) => flag,
     assertWorkspaceSpecifiedForChannelNames: async () => {},
     withAutoRefresh: async <T>(input: {

@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
-import type { SlackAuth } from "./client.ts";
+import type { FetchImpl, SlackAuth } from "./client.ts";
 import { existsSync } from "node:fs";
 import { getUserAgent } from "../lib/version.ts";
 
@@ -10,6 +10,7 @@ export async function downloadSlackFile(input: {
   destDir: string;
   preferredName?: string;
   options?: { allowHtml?: boolean };
+  fetchImpl?: FetchImpl;
 }): Promise<string> {
   const { auth, url, destDir, preferredName, options } = input;
   const absDir = resolve(destDir);
@@ -31,7 +32,8 @@ export async function downloadSlackFile(input: {
     headers["User-Agent"] = getUserAgent();
   }
 
-  const resp = await fetch(url, { headers });
+  const fetchFn = input.fetchImpl ?? globalThis.fetch;
+  const resp = await fetchFn(url, { headers });
   if (!resp.ok) {
     throw new Error(`Failed to download file (${resp.status})`);
   }
