@@ -1,5 +1,5 @@
 {
-  "name": "agent-slack",
+  "name": "@discountry/slack-cli",
   "version": "0.6.0",
   "description": "Slack automation CLI for AI agents",
   "license": "MIT",
