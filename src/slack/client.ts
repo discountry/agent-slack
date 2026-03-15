@@ -1,4 +1,3 @@
-import { WebClient } from "@slack/web-api";
 import { getUserAgent } from "../lib/version.ts";
 
 export type FetchImpl = typeof globalThis.fetch;
@@ -7,9 +6,10 @@ export type SlackAuth =
   | { auth_type: "standard"; token: string }
   | { auth_type: "browser"; xoxc_token: string; xoxd_cookie: string };
 
+const SLACK_API_BASE = "https://slack.com/api/";
+
 export class SlackApiClient {
   private auth: SlackAuth;
-  private web?: WebClient;
   private workspaceUrl?: string;
   private fetchImpl: FetchImpl;
 
@@ -17,9 +17,6 @@ export class SlackApiClient {
     this.auth = auth;
     this.workspaceUrl = options?.workspaceUrl;
     this.fetchImpl = options?.fetchImpl ?? globalThis.fetch;
-    if (auth.auth_type === "standard") {
-      this.web = new WebClient(auth.token);
-    }
   }
 
   async api(
@@ -27,10 +24,7 @@ export class SlackApiClient {
     params: Record<string, unknown> = {},
   ): Promise<Record<string, unknown>> {
     if (this.auth.auth_type === "standard") {
-      if (!this.web) {
-        throw new Error("WebClient not initialized");
-      }
-      return (await this.web.apiCall(method, params)) as unknown as Record<string, unknown>;
+      return this.standardApi(method, params);
     }
 
     if (!this.workspaceUrl) {
@@ -48,6 +42,54 @@ export class SlackApiClient {
       method,
       params,
     });
+  }
+
+  /**
+   * Calls the Slack Web API using a standard bot/user token (xoxb-/xoxp-).
+   * Uses the injected fetchImpl instead of @slack/web-api's axios-based WebClient.
+   */
+  private async standardApi(
+    method: string,
+    params: Record<string, unknown>,
+    attempt = 0,
+  ): Promise<Record<string, unknown>> {
+    const { auth } = this;
+    if (auth.auth_type !== "standard") {
+      throw new Error("Standard API requires standard auth");
+    }
+
+    const url = `${SLACK_API_BASE}${method}`;
+    const cleanedEntries = Object.entries(params)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, typeof v === "object" ? JSON.stringify(v) : String(v)]);
+    const formBody = new URLSearchParams(Object.fromEntries(cleanedEntries));
+
+    const response = await this.fetchImpl(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": getUserAgent(),
+      },
+      body: formBody,
+    });
+
+    if (response.status === 429 && attempt < 3) {
+      const retryAfter = Number(response.headers.get("Retry-After") ?? "5");
+      const delayMs = Math.min(Math.max(retryAfter, 1) * 1000, 30000);
+      await new Promise((r) => setTimeout(r, delayMs));
+      return this.standardApi(method, params, attempt + 1);
+    }
+
+    const data: unknown = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(`Slack HTTP ${response.status} calling ${method}`);
+    }
+    if (!isRecord(data) || data.ok !== true) {
+      const error = isRecord(data) && typeof data.error === "string" ? data.error : null;
+      throw new Error(error || `Slack API error calling ${method}`);
+    }
+    return data;
   }
 
   private async browserApi(input: {
