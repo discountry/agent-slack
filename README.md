@@ -60,7 +60,7 @@ bash ./scripts/install-skill.sh
 ## Command map (high level)
 
 ```text
-agent-slack
+slack
 ├── update                         # self-update (detects npm/bun/binary)
 ├── auth
 │   ├── whoami
@@ -109,11 +109,11 @@ On macOS and Windows, authentication happens automatically:
 You can also run manual imports:
 
 ```bash
-agent-slack auth whoami
-agent-slack auth import-desktop
-agent-slack auth import-chrome
-agent-slack auth import-firefox
-agent-slack auth test
+slack auth whoami
+slack auth import-desktop
+slack auth import-chrome
+slack auth import-firefox
+slack auth test
 ```
 
 Alternatively, set env vars:
@@ -121,14 +121,14 @@ Alternatively, set env vars:
 ```bash
 export SLACK_TOKEN="xoxc-..."      # browser token
 export SLACK_COOKIE_D="xoxd-..."   # cookie d
-agent-slack auth test
+slack auth test
 ```
 
 Or use a standard Slack token (xoxb/xoxp):
 
 ```bash
 export SLACK_TOKEN="xoxb-..."
-agent-slack auth test
+slack auth test
 ```
 
 ## Targets: URL or channel
@@ -142,18 +142,18 @@ In practice:
 
 ```bash
 # Get a single message by channel + ts
-agent-slack message get "#general" --ts "1770165109.628379"
+slack message get "#general" --ts "1770165109.628379"
 
 # List a full thread by channel + thread root ts
-agent-slack message list "#general" --thread-ts "1770165109.000001"
+slack message list "#general" --thread-ts "1770165109.000001"
 ```
 
 If you have multiple workspaces configured and you use a channel **name** (`#channel` / `channel`), you must pass `--workspace` (or set `SLACK_WORKSPACE_URL`).
 `--workspace` accepts a full URL or a unique substring selector:
 
 ```bash
-agent-slack message get "#general" --workspace "https://stablygroup.slack.com" --ts "1770165109.628379"
-agent-slack message get "#general" --workspace "stablygroup" --ts "1770165109.628379"
+slack message get "#general" --workspace "https://stablygroup.slack.com" --ts "1770165109.628379"
+slack message get "#general" --workspace "stablygroup" --ts "1770165109.628379"
 ```
 
 ## Examples
@@ -165,26 +165,26 @@ agent-slack message get "#general" --workspace "stablygroup" --ts "1770165109.62
 
 ```bash
 # Single message (+ thread summary if threaded)
-agent-slack message get "https://workspace.slack.com/archives/C123/p1700000000000000"
+slack message get "https://workspace.slack.com/archives/C123/p1700000000000000"
 
 # Full thread for a message
-agent-slack message list "https://workspace.slack.com/archives/C123/p1700000000000000"
+slack message list "https://workspace.slack.com/archives/C123/p1700000000000000"
 
 # Recent channel messages (browse channel history)
-agent-slack message list "#general" --limit 20
+slack message list "#general" --limit 20
 
 # Recent channel messages that are marked with :eyes:
-agent-slack message list "#general" --with-reaction eyes --oldest "1770165109.000000" --limit 20
+slack message list "#general" --with-reaction eyes --oldest "1770165109.000000" --limit 20
 
 # Recent channel messages that do not have :dart:
-agent-slack message list "#general" --without-reaction dart --oldest "1770165109.000000" --limit 20
+slack message list "#general" --without-reaction dart --oldest "1770165109.000000" --limit 20
 ```
 
 Optional:
 
 ```bash
 # Include reactions + which users reacted
-agent-slack message get "https://workspace.slack.com/archives/C123/p1700000000000000" --include-reactions
+slack message get "https://workspace.slack.com/archives/C123/p1700000000000000" --include-reactions
 ```
 
 ### Draft a message (browser editor)
@@ -193,13 +193,13 @@ Opens a Slack-like WYSIWYG editor in your browser for composing messages with fu
 
 ```bash
 # Open editor for a channel
-agent-slack message draft "#general"
+slack message draft "#general"
 
 # Open editor with initial text
-agent-slack message draft "#general" "Here's my update"
+slack message draft "#general" "Here's my update"
 
 # Reply in a thread
-agent-slack message draft "https://workspace.slack.com/archives/C123/p1700000000000000"
+slack message draft "https://workspace.slack.com/archives/C123/p1700000000000000"
 ```
 
 After sending, the editor shows a "View in Slack" link to the posted message.
@@ -207,19 +207,19 @@ After sending, the editor shows a "View in Slack" link to the posted message.
 ### Reply, edit, delete, and react
 
 ```bash
-agent-slack message send "https://workspace.slack.com/archives/C123/p1700000000000000" "I can take this."
-agent-slack message send "#alerts-staging" "here's the report" --attach ./report.md
-agent-slack message edit "https://workspace.slack.com/archives/C123/p1700000000000000" "I can take this today."
-agent-slack message delete "https://workspace.slack.com/archives/C123/p1700000000000000"
-agent-slack message react add "https://workspace.slack.com/archives/C123/p1700000000000000" "eyes"
-agent-slack message react remove "https://workspace.slack.com/archives/C123/p1700000000000000" "eyes"
+slack message send "https://workspace.slack.com/archives/C123/p1700000000000000" "I can take this."
+slack message send "#alerts-staging" "here's the report" --attach ./report.md
+slack message edit "https://workspace.slack.com/archives/C123/p1700000000000000" "I can take this today."
+slack message delete "https://workspace.slack.com/archives/C123/p1700000000000000"
+slack message react add "https://workspace.slack.com/archives/C123/p1700000000000000" "eyes"
+slack message react remove "https://workspace.slack.com/archives/C123/p1700000000000000" "eyes"
 ```
 
 Channel mode requires `--ts`:
 
 ```bash
-agent-slack message edit "#general" "Updated text" --workspace "myteam" --ts "1770165109.628379"
-agent-slack message delete "#general" --workspace "myteam" --ts "1770165109.628379"
+slack message edit "#general" "Updated text" --workspace "myteam" --ts "1770165109.628379"
+slack message delete "#general" --workspace "myteam" --ts "1770165109.628379"
 ```
 
 Attach options for `message send`:
@@ -230,28 +230,28 @@ Attach options for `message send`:
 
 ```bash
 # List conversations for current user (users.conversations)
-agent-slack channel list
+slack channel list
 
 # List conversations for a specific user
-agent-slack channel list --user "@alice" --limit 50
+slack channel list --user "@alice" --limit 50
 
 # List all workspace conversations (conversations.list)
-agent-slack channel list --all --limit 100
+slack channel list --all --limit 100
 
 # Create a public channel
-agent-slack channel new --name "incident-war-room"
+slack channel new --name "incident-war-room"
 
 # Create a private channel
-agent-slack channel new --name "incident-leads" --private
+slack channel new --name "incident-leads" --private
 
 # Invite users by id, handle, or email
-agent-slack channel invite --channel "incident-war-room" --users "U01AAAA,@alice,bob@example.com"
+slack channel invite --channel "incident-war-room" --users "U01AAAA,@alice,bob@example.com"
 
 # Invite external Slack Connect users by email (restricted by default)
-agent-slack channel invite --channel "incident-war-room" --users "partner@vendor.com" --external
+slack channel invite --channel "incident-war-room" --users "partner@vendor.com" --external
 
 # External invite with permission for invitees to invite others
-agent-slack channel invite --channel "incident-war-room" --users "partner@vendor.com" --external --allow-external-user-invites
+slack channel invite --channel "incident-war-room" --users "partner@vendor.com" --external --allow-external-user-invites
 ```
 
 Notes:
@@ -303,13 +303,13 @@ Agents can read those paths directly (e.g. snippets as `.txt`, images as `.png`)
 
 ```bash
 # Search both messages and files
-agent-slack search all "smoke tests failed" --channel "#alerts" --after 2026-01-01 --before 2026-02-01
+slack search all "smoke tests failed" --channel "#alerts" --after 2026-01-01 --before 2026-02-01
 
 # Search messages only
-agent-slack search messages "stably ai" --user "@stablyai" --channel general
+slack search messages "stably ai" --user "@stablyai" --channel general
 
 # Search files only (downloads files and returns local paths)
-agent-slack search files "testing" --content-type snippet --limit 10
+slack search files "testing" --content-type snippet --limit 10
 ```
 
 Tips:
@@ -323,18 +323,18 @@ Tips:
 
 ```bash
 # List users (email requires appropriate Slack scopes; fields are pruned if missing)
-agent-slack user list --workspace "https://workspace.slack.com" --limit 200 | jq .
+slack user list --workspace "https://workspace.slack.com" --limit 200 | jq .
 
 # Get one user by id or handle
-agent-slack user get U12345678 --workspace "https://workspace.slack.com" | jq .
-agent-slack user get "@alice" --workspace "https://workspace.slack.com" | jq .
+slack user get U12345678 --workspace "https://workspace.slack.com" | jq .
+slack user get "@alice" --workspace "https://workspace.slack.com" | jq .
 ```
 
 ### Fetch a Canvas as Markdown
 
 ```bash
-agent-slack canvas get "https://workspace.slack.com/docs/T123/F456"
-agent-slack canvas get "F456" --workspace "https://workspace.slack.com"
+slack canvas get "https://workspace.slack.com/docs/T123/F456"
+slack canvas get "F456" --workspace "https://workspace.slack.com"
 ```
 
 ## Developing / Contributing

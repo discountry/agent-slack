@@ -11,7 +11,7 @@ import { pruneEmpty } from "../lib/compact-json.ts";
 export function registerUpdateCommand(input: { program: Command }): void {
   input.program
     .command("update")
-    .description("Update agent-slack to the latest version")
+    .description("Update slack to the latest version")
     .option("--check", "Only check for updates (don't install)")
     .action(async (...args) => {
       const [options] = args as [{ check?: boolean }];
@@ -53,7 +53,7 @@ export function registerUpdateCommand(input: { program: Command }): void {
           return;
         }
 
-        process.stderr.write(`Updating agent-slack ${result.current} → ${result.latest}...\n`);
+        process.stderr.write(`Updating slack ${result.current} → ${result.latest}...\n`);
 
         let outcome: { success: boolean; message: string };
         if (method === "npm" || method === "bun") {

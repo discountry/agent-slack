@@ -10,7 +10,7 @@ import {
   upsertWorkspaces,
 } from "../auth/store.ts";
 import { resolveWorkspaceSelector } from "./workspace-selector.ts";
-import { SlackApiClient, type SlackAuth } from "../slack/client.ts";
+import { SlackApiClient, type FetchImpl, type SlackAuth } from "../slack/client.ts";
 
 export function normalizeUrl(u: string): string {
   const url = new URL(u);
@@ -40,7 +40,10 @@ function pickAuthFromEnv(): SlackAuth | null {
   return { auth_type: "standard", token };
 }
 
-export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
+export async function getClientForWorkspace(
+  workspaceUrl?: string,
+  fetchImpl?: FetchImpl,
+): Promise<{
   client: SlackApiClient;
   auth: SlackAuth;
   workspace_url?: string;
@@ -70,7 +73,7 @@ export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
     const envWorkspaceUrl = process.env.SLACK_WORKSPACE_URL?.trim();
     const urlForBrowser = resolvedWorkspaceUrl || envWorkspaceUrl;
     return {
-      client: new SlackApiClient(env, { workspaceUrl: urlForBrowser }),
+      client: new SlackApiClient(env, { workspaceUrl: urlForBrowser, fetchImpl }),
       auth: env,
       workspace_url: urlForBrowser,
     };
@@ -82,6 +85,7 @@ export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
       return {
         client: new SlackApiClient(ws.auth as SlackAuth, {
           workspaceUrl: ws.workspace_url,
+          fetchImpl,
         }),
         auth: ws.auth as SlackAuth,
         workspace_url: ws.workspace_url,
@@ -95,6 +99,7 @@ export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
       return {
         client: new SlackApiClient(def.auth as SlackAuth, {
           workspaceUrl: def.workspace_url,
+          fetchImpl,
         }),
         auth: def.auth as SlackAuth,
         workspace_url: def.workspace_url,
@@ -126,6 +131,7 @@ export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
       return {
         client: new SlackApiClient(chosen.auth as SlackAuth, {
           workspaceUrl: chosen.workspace_url,
+          fetchImpl,
         }),
         auth: chosen.auth as SlackAuth,
         workspace_url: chosen.workspace_url,
@@ -159,6 +165,7 @@ export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
       cookieD: source.cookie_d,
       selector,
       normalizedSelectorUrl,
+      fetchImpl,
     });
     if (result) {
       return result;
@@ -167,12 +174,12 @@ export async function getClientForWorkspace(workspaceUrl?: string): Promise<{
 
   if (selector && !normalizedSelectorUrl) {
     throw new Error(
-      `No configured workspace matches selector "${selector}". Run "agent-slack auth whoami" to list available workspaces.`,
+      `No configured workspace matches selector "${selector}". Run "slack auth whoami" to list available workspaces.`,
     );
   }
 
   throw new Error(
-    'No Slack credentials available. Try "agent-slack auth import-desktop", "agent-slack auth import-chrome", "agent-slack auth import-brave", "agent-slack auth import-firefox", or set SLACK_TOKEN / SLACK_COOKIE_D.',
+    'No Slack credentials available. Try "slack auth import-desktop", "slack auth import-chrome", "slack auth import-brave", "slack auth import-firefox", or set SLACK_TOKEN / SLACK_COOKIE_D.',
   );
 }
 
@@ -181,6 +188,7 @@ async function matchAndUpsertBrowserTeam(input: {
   cookieD: string;
   selector: string | undefined;
   normalizedSelectorUrl: string | undefined;
+  fetchImpl?: FetchImpl;
 }): Promise<{ client: SlackApiClient; auth: SlackAuth; workspace_url: string } | null> {
   const { teams, cookieD, selector, normalizedSelectorUrl } = input;
   let chosen = teams[0]!;
@@ -240,7 +248,7 @@ async function matchAndUpsertBrowserTeam(input: {
     },
   });
   return {
-    client: new SlackApiClient(auth, { workspaceUrl }),
+    client: new SlackApiClient(auth, { workspaceUrl, fetchImpl: input.fetchImpl }),
     auth,
     workspace_url: workspaceUrl,
   };

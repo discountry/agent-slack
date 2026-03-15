@@ -53,5 +53,5 @@ export function getPackageVersion(): string {
 }
 
 export function getUserAgent(): string {
-  return `agent-slack/${getPackageVersion()}`;
+  return `slack/${getPackageVersion()}`;
 }

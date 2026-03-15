@@ -6,10 +6,11 @@ import { extractFromFirefox } from "../auth/firefox.ts";
 import { loadCredentials, upsertWorkspaces } from "../auth/store.ts";
 import { normalizeChannelInput } from "../slack/channels.ts";
 import type { SlackApiClient } from "../slack/client.ts";
-import { type SlackAuth } from "../slack/client.ts";
+import { type FetchImpl, type SlackAuth } from "../slack/client.ts";
 import { getClientForWorkspace, normalizeUrl } from "./context-client-resolver.ts";
 
 export type CliContext = {
+  fetchImpl: FetchImpl;
   effectiveWorkspaceUrl: (flag?: string) => string | undefined;
   assertWorkspaceSpecifiedForChannelNames: (input: {
     workspaceUrl: string | undefined;
@@ -129,12 +130,15 @@ async function withAutoRefresh<T>(input: {
   }
 }
 
-export function createCliContext(): CliContext {
+export function createCliContext(options?: { fetchImpl?: FetchImpl }): CliContext {
+  const fetchImplResolved = options?.fetchImpl ?? globalThis.fetch;
   return {
+    fetchImpl: fetchImplResolved,
     effectiveWorkspaceUrl,
     assertWorkspaceSpecifiedForChannelNames,
     withAutoRefresh,
-    getClientForWorkspace,
+    getClientForWorkspace: (workspaceUrl?: string) =>
+      getClientForWorkspace(workspaceUrl, fetchImplResolved),
     normalizeUrl,
     errorMessage,
     parseContentType,

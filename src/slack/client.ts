@@ -1,6 +1,8 @@
 import { WebClient } from "@slack/web-api";
 import { getUserAgent } from "../lib/version.ts";
 
+export type FetchImpl = typeof globalThis.fetch;
+
 export type SlackAuth =
   | { auth_type: "standard"; token: string }
   | { auth_type: "browser"; xoxc_token: string; xoxd_cookie: string };
@@ -9,10 +11,12 @@ export class SlackApiClient {
   private auth: SlackAuth;
   private web?: WebClient;
   private workspaceUrl?: string;
+  private fetchImpl: FetchImpl;
 
-  constructor(auth: SlackAuth, options?: { workspaceUrl?: string }) {
+  constructor(auth: SlackAuth, options?: { workspaceUrl?: string; fetchImpl?: FetchImpl }) {
     this.auth = auth;
     this.workspaceUrl = options?.workspaceUrl;
+    this.fetchImpl = options?.fetchImpl ?? globalThis.fetch;
     if (auth.auth_type === "standard") {
       this.web = new WebClient(auth.token);
     }
@@ -62,7 +66,7 @@ export class SlackApiClient {
       token: input.auth.xoxc_token,
       ...Object.fromEntries(cleanedEntries),
     });
-    const response = await fetch(url, {
+    const response = await this.fetchImpl(url, {
       method: "POST",
       headers: {
         Cookie: `d=${encodeURIComponent(input.auth.xoxd_cookie)}`,

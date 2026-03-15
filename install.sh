@@ -2,7 +2,7 @@
 set -eu
 
 REPO="${AGENT_SLACK_REPO:-stablyai/agent-slack}"
-BIN_NAME="agent-slack"
+BIN_NAME="slack"
 SKIP_VERIFY="${AGENT_SLACK_SKIP_VERIFY:-0}"
 
 if [ -n "${AGENT_SLACK_INSTALL_DIR:-}" ]; then

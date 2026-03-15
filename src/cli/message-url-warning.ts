@@ -2,7 +2,7 @@ export function warnOnTruncatedSlackUrl(ref: { possiblyTruncated?: boolean }): v
   if (ref.possiblyTruncated) {
     console.error(
       'Hint: URL may have been truncated by shell. Quote URLs containing "&":\n' +
-        '  agent-slack message get "https://...?thread_ts=...&cid=..."',
+        '  slack message get "https://...?thread_ts=...&cid=..."',
     );
   }
 }

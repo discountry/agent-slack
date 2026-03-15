@@ -9,31 +9,42 @@ import { registerUpdateCommand } from "./cli/update-command.ts";
 import { registerUserCommand } from "./cli/user-command.ts";
 import { registerChannelCommand } from "./cli/channel-command.ts";
 import { backgroundUpdateCheck } from "./lib/update.ts";
+import type { FetchImpl } from "./slack/client.ts";
 
-const program = new Command();
-program
-  .name("agent-slack")
-  .description("Slack automation CLI for AI agents")
-  .version(getPackageVersion());
+export type { FetchImpl } from "./slack/client.ts";
+export { createCliContext } from "./cli/context.ts";
 
-const ctx = createCliContext();
+export function runCli(options?: { fetchImpl?: FetchImpl }) {
+  const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
 
-registerAuthCommand({ program, ctx });
-registerMessageCommand({ program, ctx });
-registerCanvasCommand({ program, ctx });
-registerSearchCommand({ program, ctx });
-registerUpdateCommand({ program });
-registerUserCommand({ program, ctx });
-registerChannelCommand({ program, ctx });
+  const program = new Command();
+  program
+    .name("slack")
+    .description("Slack automation CLI for AI agents")
+    .version(getPackageVersion());
 
-program.parse(process.argv);
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
+  const ctx = createCliContext({ fetchImpl });
+
+  registerAuthCommand({ program, ctx });
+  registerMessageCommand({ program, ctx });
+  registerCanvasCommand({ program, ctx });
+  registerSearchCommand({ program, ctx });
+  registerUpdateCommand({ program });
+  registerUserCommand({ program, ctx });
+  registerChannelCommand({ program, ctx });
+
+  program.parse(process.argv);
+  if (!process.argv.slice(2).length) {
+    program.outputHelp();
+  }
+
+  // Fire-and-forget background update check (throttled to once/24h, stderr only).
+  // Skip for the update command itself to avoid duplicate output.
+  const [subcommand] = process.argv.slice(2);
+  if (subcommand && subcommand !== "update") {
+    backgroundUpdateCheck(fetchImpl);
+  }
 }
 
-// Fire-and-forget background update check (throttled to once/24h, stderr only).
-// Skip for the update command itself to avoid duplicate output.
-const [subcommand] = process.argv.slice(2);
-if (subcommand && subcommand !== "update") {
-  backgroundUpdateCheck();
-}
+// Default execution — run with globalThis.fetch
+runCli();

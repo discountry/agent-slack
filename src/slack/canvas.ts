@@ -1,4 +1,4 @@
-import type { SlackApiClient, SlackAuth } from "./client.ts";
+import type { FetchImpl, SlackApiClient, SlackAuth } from "./client.ts";
 import { downloadSlackFile } from "./files.ts";
 import { htmlToMarkdown } from "./html-to-md.ts";
 import { ensureDownloadsDir } from "../lib/tmp-paths.ts";
@@ -47,6 +47,7 @@ export async function fetchCanvasMarkdown(
     workspaceUrl: string;
     canvasId: string;
     options?: { maxChars?: number; downloadHtml?: boolean };
+    fetchImpl?: FetchImpl;
   },
 ): Promise<{ canvas: { id: string; title?: string; markdown: string } }> {
   const info = await client.api("files.info", { file: input.canvasId });
@@ -73,6 +74,7 @@ export async function fetchCanvasMarkdown(
       destDir: await ensureDownloadsDir(),
       preferredName: `${input.canvasId}.html`,
       options: { allowHtml: true },
+      fetchImpl: input.fetchImpl,
     });
     html = await readFile(htmlPath, "utf8");
   } else {
@@ -85,7 +87,8 @@ export async function fetchCanvasMarkdown(
       headers.Referer = "https://app.slack.com/";
       headers["User-Agent"] = getUserAgent();
     }
-    const resp = await fetch(downloadUrl, { headers });
+    const fetchFn = input.fetchImpl ?? globalThis.fetch;
+    const resp = await fetchFn(downloadUrl, { headers });
     if (!resp.ok) {
       throw new Error(`Failed to download canvas HTML (${resp.status})`);
     }

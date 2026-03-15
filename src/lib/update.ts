@@ -6,6 +6,7 @@ import { basename, join } from "node:path";
 import { getAppDir } from "./app-dir.ts";
 import { readJsonFile, writeJsonFile } from "./fs.ts";
 import { getPackageVersion } from "./version.ts";
+import type { FetchImpl } from "../slack/client.ts";
 
 const REPO = "stablyai/agent-slack";
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -44,9 +45,10 @@ export function compareSemver(a: string, b: string): number {
  * Fetch the latest release version from GitHub.
  * Returns null on any network/API error (never throws).
  */
-export async function fetchLatestVersion(): Promise<string | null> {
+export async function fetchLatestVersion(fetchImpl?: FetchImpl): Promise<string | null> {
   try {
-    const resp = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+    const fetchFn = fetchImpl ?? globalThis.fetch;
+    const resp = await fetchFn(`https://api.github.com/repos/${REPO}/releases/latest`, {
       headers: { Accept: "application/vnd.github+json", "User-Agent": "agent-slack-updater" },
       signal: AbortSignal.timeout(5000),
     });
@@ -67,7 +69,10 @@ export async function fetchLatestVersion(): Promise<string | null> {
  * @param force  Skip the cache and always fetch from GitHub.
  * @returns `{ current, latest, updateAvailable }` or null on error.
  */
-export async function checkForUpdate(force = false): Promise<{
+export async function checkForUpdate(
+  force = false,
+  fetchImpl?: FetchImpl,
+): Promise<{
   current: string;
   latest: string;
   update_available: boolean;
@@ -85,7 +90,7 @@ export async function checkForUpdate(force = false): Promise<{
     }
   }
 
-  const latest = await fetchLatestVersion();
+  const latest = await fetchLatestVersion(fetchImpl);
   if (!latest) {
     return null;
   }
@@ -110,7 +115,7 @@ export async function checkForUpdate(force = false): Promise<{
 export type InstallMethod = "binary" | "npm" | "bun";
 
 /**
- * Detect how agent-slack was installed so we can use the right update strategy.
+ * Detect how slack was installed so we can use the right update strategy.
  *
  * - "npm"    → running via Node.js (npm install -g agent-slack)
  * - "bun"    → running via Bun runtime (bun install -g agent-slack / bunx)
@@ -141,11 +146,11 @@ export function getUpdateCommand(method?: InstallMethod): string {
   const m = method ?? detectInstallMethod();
   switch (m) {
     case "npm":
-      return "npm install -g agent-slack@latest";
+      return "npm install -g agent-slack@latest"; // npm package name stays agent-slack
     case "bun":
-      return "bun install -g agent-slack@latest";
+      return "bun install -g agent-slack@latest"; // npm package name stays agent-slack
     case "binary":
-      return "agent-slack update";
+      return "slack update";
   }
 }
 
@@ -160,7 +165,7 @@ export function performPackageManagerUpdate(method: "npm" | "bun"): {
   const cmd = getUpdateCommand(method);
   try {
     execSync(cmd, { stdio: ["inherit", "pipe", "inherit"] });
-    return { success: true, message: `Updated agent-slack via: ${cmd}` };
+    return { success: true, message: `Updated slack via: ${cmd}` };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { success: false, message: `Failed to run "${cmd}": ${msg}` };
@@ -186,6 +191,7 @@ async function sha256(filePath: string): Promise<string> {
  */
 export async function performUpdate(
   latest: string,
+  fetchImpl?: FetchImpl,
 ): Promise<{ success: boolean; message: string }> {
   const asset = detectPlatformAsset();
   const tag = `v${latest}`;
@@ -198,10 +204,11 @@ export async function performUpdate(
   const sumsTmp = join(tmp, "checksums-sha256.txt");
 
   try {
+    const fetchFn = fetchImpl ?? globalThis.fetch;
     // Download binary + checksums in parallel
     const [binResp, sumsResp] = await Promise.all([
-      fetch(`${baseUrl}/${asset}`, { signal: AbortSignal.timeout(120_000) }),
-      fetch(`${baseUrl}/checksums-sha256.txt`, { signal: AbortSignal.timeout(30_000) }),
+      fetchFn(`${baseUrl}/${asset}`, { signal: AbortSignal.timeout(120_000) }),
+      fetchFn(`${baseUrl}/checksums-sha256.txt`, { signal: AbortSignal.timeout(30_000) }),
     ]);
 
     if (!binResp.ok) {
@@ -250,7 +257,7 @@ export async function performUpdate(
       throw err;
     }
 
-    return { success: true, message: `Updated agent-slack to ${latest}` };
+    return { success: true, message: `Updated slack to ${latest}` };
   } finally {
     await rm(tmp, { recursive: true, force: true }).catch(() => {});
   }
@@ -261,12 +268,12 @@ export async function performUpdate(
  * Swallows all errors silently. Respects the 24-hour throttle.
  * Disable with AGENT_SLACK_NO_UPDATE_CHECK=1.
  */
-export async function backgroundUpdateCheck(): Promise<void> {
+export async function backgroundUpdateCheck(fetchImpl?: FetchImpl): Promise<void> {
   if (process.env.AGENT_SLACK_NO_UPDATE_CHECK === "1") {
     return;
   }
   try {
-    const result = await checkForUpdate();
+    const result = await checkForUpdate(false, fetchImpl);
     if (result?.update_available) {
       const cmd = getUpdateCommand();
       process.stderr.write(
