@@ -20,7 +20,7 @@ let
     or (throw "agent-slack: missing hash for system '${system}' in nix/sources.json");
 in
   stdenvNoCC.mkDerivation {
-    pname = "agent-slack";
+    pname = "slack";
     inherit (sources) version;
 
     src = fetchurl {
@@ -32,7 +32,7 @@ in
 
     installPhase = ''
       runHook preInstall
-      install -Dm755 "$src" "$out/bin/agent-slack"
+      install -Dm755 "$src" "$out/bin/slack"
       runHook postInstall
     '';
 
@@ -41,7 +41,7 @@ in
       homepage = "https://github.com/stablyai/agent-slack";
       license = lib.licenses.mit;
       platforms = builtins.attrNames assetBySystem;
-      mainProgram = "agent-slack";
+      mainProgram = "slack";
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };
   }

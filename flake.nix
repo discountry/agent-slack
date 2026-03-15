@@ -1,5 +1,5 @@
 {
-  description = "agent-slack: Slack automation CLI for AI agents";
+  description = "slack: Slack automation CLI for AI agents";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -13,17 +13,17 @@
   }:
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs {inherit system;};
-      agent-slack = pkgs.callPackage ./nix/package.nix {};
+      slack = pkgs.callPackage ./nix/package.nix {};
     in {
       packages = {
-        inherit agent-slack;
-        default = agent-slack;
+        inherit slack;
+        default = slack;
       };
 
       apps = {
         default = flake-utils.lib.mkApp {
-          drv = agent-slack;
-          name = "agent-slack";
+          drv = slack;
+          name = "slack";
         };
       };
     });

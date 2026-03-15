@@ -29,7 +29,7 @@ bun run format:check
 Run via Bun directly (for local development):
 
 ```bash
-bun ./bin/agent-slack.bun.js --help
+bun ./bin/slack.bun.js --help
 ```
 
 ## Releasing (maintainers)

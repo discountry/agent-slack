@@ -19,7 +19,7 @@ export function runCli(options?: { fetchImpl?: FetchImpl }) {
 
   const program = new Command();
   program
-    .name("agent-slack")
+    .name("slack")
     .description("Slack automation CLI for AI agents")
     .version(getPackageVersion());
 

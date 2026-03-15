@@ -8,11 +8,11 @@
     "url": "git+https://github.com/stablyai/agent-slack.git"
   },
   "bin": {
-    "agent-slack": "./bin/agent-slack.js"
+    "slack": "./bin/slack.js"
   },
   "files": [
     "dist",
-    "bin/agent-slack.js",
+    "bin/slack.js",
     "README.md",
     "LICENSE"
   ],

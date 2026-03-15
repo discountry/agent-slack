@@ -115,7 +115,7 @@ export async function checkForUpdate(
 export type InstallMethod = "binary" | "npm" | "bun";
 
 /**
- * Detect how agent-slack was installed so we can use the right update strategy.
+ * Detect how slack was installed so we can use the right update strategy.
  *
  * - "npm"    → running via Node.js (npm install -g agent-slack)
  * - "bun"    → running via Bun runtime (bun install -g agent-slack / bunx)
@@ -146,11 +146,11 @@ export function getUpdateCommand(method?: InstallMethod): string {
   const m = method ?? detectInstallMethod();
   switch (m) {
     case "npm":
-      return "npm install -g agent-slack@latest";
+      return "npm install -g agent-slack@latest"; // npm package name stays agent-slack
     case "bun":
-      return "bun install -g agent-slack@latest";
+      return "bun install -g agent-slack@latest"; // npm package name stays agent-slack
     case "binary":
-      return "agent-slack update";
+      return "slack update";
   }
 }
 
@@ -165,7 +165,7 @@ export function performPackageManagerUpdate(method: "npm" | "bun"): {
   const cmd = getUpdateCommand(method);
   try {
     execSync(cmd, { stdio: ["inherit", "pipe", "inherit"] });
-    return { success: true, message: `Updated agent-slack via: ${cmd}` };
+    return { success: true, message: `Updated slack via: ${cmd}` };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { success: false, message: `Failed to run "${cmd}": ${msg}` };
@@ -257,7 +257,7 @@ export async function performUpdate(
       throw err;
     }
 
-    return { success: true, message: `Updated agent-slack to ${latest}` };
+    return { success: true, message: `Updated slack to ${latest}` };
   } finally {
     await rm(tmp, { recursive: true, force: true }).catch(() => {});
   }

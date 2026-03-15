@@ -174,12 +174,12 @@ export async function getClientForWorkspace(
 
   if (selector && !normalizedSelectorUrl) {
     throw new Error(
-      `No configured workspace matches selector "${selector}". Run "agent-slack auth whoami" to list available workspaces.`,
+      `No configured workspace matches selector "${selector}". Run "slack auth whoami" to list available workspaces.`,
     );
   }
 
   throw new Error(
-    'No Slack credentials available. Try "agent-slack auth import-desktop", "agent-slack auth import-chrome", "agent-slack auth import-brave", "agent-slack auth import-firefox", or set SLACK_TOKEN / SLACK_COOKIE_D.',
+    'No Slack credentials available. Try "slack auth import-desktop", "slack auth import-chrome", "slack auth import-brave", "slack auth import-firefox", or set SLACK_TOKEN / SLACK_COOKIE_D.',
   );
 }
 
